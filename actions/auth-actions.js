@@ -1,8 +1,8 @@
 'use server';
 
-import { createAuthSession } from '@/lib/auth';
-import { hashUserPassword } from '@/lib/hash';
-import { createUser } from '@/lib/user';
+import { createAuthSession, destroySession } from '@/lib/auth';
+import { hashUserPassword, verifyPassword } from '@/lib/hash';
+import { createUser, getUserByEmail } from '@/lib/user';
 import { redirect } from 'next/navigation';
 
 export const signup = async (prevState, formData) => {
@@ -39,4 +39,46 @@ export const signup = async (prevState, formData) => {
 
     throw error;
   }
+};
+
+export const login = async (prevData, formData) => {
+  const email = formData.get('email');
+  const password = formData.get('password');
+  const existingUser = getUserByEmail(email);
+
+  let errors = {};
+
+  if (!existingUser) {
+    return {
+      errors: {
+        email: 'User with that email does not exist',
+      },
+    };
+  }
+
+  const isValidPassword = verifyPassword(existingUser.password, password);
+
+  if (!isValidPassword) {
+    return {
+      errors: {
+        password: 'Password is incorrect',
+      },
+    };
+  }
+
+  await createAuthSession(existingUser.id);
+  redirect('/training');
+};
+
+export const auth = async (mode, prevState, formData) => {
+  if (mode === 'login') {
+    return login(prevState, formData);
+  }
+
+  return signup(prevState, formData);
+};
+
+export const logout = async () => {
+  await destroySession();
+  return redirect('/');
 };
