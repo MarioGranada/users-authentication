@@ -29,7 +29,8 @@ export const signup = async (prevState, formData) => {
     await createAuthSession(id);
     redirect('/training');
   } catch (error) {
-    if (error.code === 'SQLITE_CONSTRAINT_UNIQUE') {
+    // 23505 = Postgres unique_violation (email already registered)
+    if (error.code === '23505') {
       return {
         errors: {
           email: 'User with that email already exists',
@@ -44,7 +45,7 @@ export const signup = async (prevState, formData) => {
 export const login = async (prevData, formData) => {
   const email = formData.get('email');
   const password = formData.get('password');
-  const existingUser = getUserByEmail(email);
+  const existingUser = await getUserByEmail(email);
 
   let errors = {};
 

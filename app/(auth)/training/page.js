@@ -8,7 +8,7 @@ export default async function TrainingPage() {
   if (!result.user) {
     return redirect('/');
   }
-  const trainingSessions = getTrainings();
+  const trainingSessions = await getTrainings();
 
   return (
     <main>
