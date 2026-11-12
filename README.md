@@ -6,6 +6,14 @@ Passwords are hashed with Node’s `scrypt`, users, sessions and trainings are s
 
 > **Follow-along project.** This app was built while following **Next.js 14 & React — The Complete Guide (Academind / Maximilian Schwarzmüller)**. It is included in the portfolio as a learning exercise, not as a production product. The implementation is my own work based on the course material.
 
+## Live demo
+
+| | |
+| --- | --- |
+| **Live site** | https://users-authentication-ruby.vercel.app |
+| **Repository** | https://github.com/MarioGranada/users-authentication |
+| **Portfolio summary** | Cookie-based authentication in Next.js with Lucia: signup, login, logout and a protected training catalogue, with users and sessions stored in Supabase Postgres. |
+
 ## Features
 
 - Signup and login through server actions.
@@ -121,6 +129,7 @@ Open http://localhost:3000.
 
 ## Deployment
 
+- **Live:** https://users-authentication-ruby.vercel.app (Vercel production, deployed from `main`).
 - Target: Vercel, with data in the shared portfolio Supabase project (schema `auth_demo`; not `auth`, which Supabase reserves). The Supabase ↔ Vercel integration injects `POSTGRES_URL` into every environment.
 - Run `npm run db:migrate` once against the Supabase database before the first deployment.
 - Session cookies are marked `secure` when `NODE_ENV === "production"`; HTTPS is required in production.

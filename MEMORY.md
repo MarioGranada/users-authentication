@@ -6,7 +6,7 @@ _Last updated: 2026-11-12_
 
 - Signup, login, logout, session validation, and the protected training page work (verified end to end against Postgres on 2026-11-12).
 - Data lives in Supabase Postgres (`auth_demo` schema); schema + seed in `db/migration.sql` (idempotent).
-- Linked to Vercel project `users-authentication` (GitHub connected). Deployment waits on the Supabase integration being provisioned.
+- Linked to Vercel project `users-authentication` (GitHub connected). Live at https://users-authentication-ruby.vercel.app since 2026-11-12.
 - No tests yet.
 
 ## Key decisions
@@ -31,7 +31,6 @@ _Last updated: 2026-11-12_
 
 ## Next steps
 
-- Add the live URL to the README once deployed.
 - Simplify the nested layout; add rate limiting and tests.
 
 ---
