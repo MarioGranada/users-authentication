@@ -21,6 +21,7 @@ Compact guide for future OpenCode sessions. It records only the facts an agent i
 
 - `POSTGRES_URL` (required): pooled connection string injected by the Supabase ↔ Vercel integration; `vercel env pull .env.local` locally.
 - `POSTGRES_URL_NON_POOLING` (optional): used by `npm run db:migrate`. Both documented in `.env.example`.
+- `CRON_SECRET`: protects `app/api/cron/reset/route.js` (nightly Vercel Cron in `vercel.json`), which deletes every account and session (the training catalogue stays). Missing secret → every request is refused. Never print or commit it.
 - In production, the session cookie is `secure`; the app must be served over HTTPS.
 - Never commit `.env*` files (except `.env.example`) or real user data.
 

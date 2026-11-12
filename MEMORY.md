@@ -7,6 +7,7 @@ _Last updated: 2026-11-12_
 - Signup, login, logout, session validation, and the protected training page work (verified end to end against Postgres on 2026-11-12).
 - Data lives in Supabase Postgres (`auth_demo` schema); schema + seed in `db/migration.sql` (idempotent).
 - Linked to Vercel project `users-authentication` (GitHub connected). Live at https://users-authentication-ruby.vercel.app since 2026-11-12.
+- Nightly reset (2026-11-12): Vercel Cron `0 4 * * *` → `/api/cron/reset` deletes every account and session (the training catalogue stays); guarded by the `CRON_SECRET` env var.
 - No tests yet.
 
 ## Key decisions

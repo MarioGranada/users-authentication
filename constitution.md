@@ -63,6 +63,7 @@ A course project for server-side authentication with Next.js and Lucia. It is no
 ### 7. Deployment
 
 - Deploy Next.js to Vercel; data lives in the shared portfolio Supabase project and `POSTGRES_URL` comes from the Supabase ↔ Vercel integration.
+- A nightly Vercel Cron calls `/api/cron/reset`, which deletes every account and session (the training catalogue stays). The endpoint refuses requests without `Authorization: Bearer $CRON_SECRET`.
 - Keep session cookies `secure` and serve over HTTPS.
 
 ## What to Avoid

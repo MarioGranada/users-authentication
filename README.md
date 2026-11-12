@@ -14,6 +14,8 @@ Passwords are hashed with Node’s `scrypt`, users, sessions and trainings are s
 | **Repository** | https://github.com/MarioGranada/users-authentication |
 | **Portfolio summary** | Cookie-based authentication in Next.js with Lucia: signup, login, logout and a protected training catalogue, with users and sessions stored in Supabase Postgres. |
 
+The demo is public: accounts and sessions are deleted every night (04:00 UTC).
+
 ## Features
 
 - Signup and login through server actions.
@@ -86,6 +88,7 @@ vercel env pull .env.local
 | --- | --- | --- |
 | `POSTGRES_URL` | Pooled Postgres connection string (set by the Supabase integration). | Yes |
 | `POSTGRES_URL_NON_POOLING` | Direct connection used by `npm run db:migrate`; falls back to `POSTGRES_URL`. | No |
+| `CRON_SECRET` | Protects `/api/cron/reset`; Vercel sends it to the nightly cron. Random value set in the Vercel project. | Production |
 
 Any Postgres works locally, e.g. `POSTGRES_URL=postgres://postgres:postgres@localhost:5432/postgres`. See `.env.example`. No auth secret is needed: Lucia stores sessions in the database.
 
@@ -131,6 +134,7 @@ Open http://localhost:3000.
 
 - **Live:** https://users-authentication-ruby.vercel.app (Vercel production, deployed from `main`).
 - Target: Vercel, with data in the shared portfolio Supabase project (schema `auth_demo`; not `auth`, which Supabase reserves). The Supabase ↔ Vercel integration injects `POSTGRES_URL` into every environment.
+- A daily Vercel Cron (`vercel.json`, 04:00 UTC) calls `/api/cron/reset`, which deletes every account and session (the training catalogue stays). It requires `CRON_SECRET`.
 - Run `npm run db:migrate` once against the Supabase database before the first deployment.
 - Session cookies are marked `secure` when `NODE_ENV === "production"`; HTTPS is required in production.
 - Deployed through Vercel’s Git integration; no GitHub Actions workflow is needed.
