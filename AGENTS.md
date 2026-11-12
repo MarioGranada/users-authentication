@@ -13,15 +13,16 @@ Compact guide for future OpenCode sessions. It records only the facts an agent i
 
 ## Requirements
 
-- Node.js 18 or 20 (use a version supported by `better-sqlite3`).
+- Node.js 22+.
 - npm (a `package-lock.json` is committed).
-- A writable project directory; `training.db` is created on first run.
+- A Postgres database (production: the shared portfolio Supabase project). Run `npm run db:migrate` once.
 
 ## Environment
 
-- No environment variables are required for local development.
+- `POSTGRES_URL` (required): pooled connection string injected by the Supabase ↔ Vercel integration; `vercel env pull .env.local` locally.
+- `POSTGRES_URL_NON_POOLING` (optional): used by `npm run db:migrate`. Both documented in `.env.example`.
 - In production, the session cookie is `secure`; the app must be served over HTTPS.
-- Never commit `training.db` or real user data.
+- Never commit `.env*` files (except `.env.example`) or real user data.
 
 ## Architecture
 
@@ -40,11 +41,12 @@ Compact guide for future OpenCode sessions. It records only the facts an agent i
 
 ## Conventions and gotchas
 
-- Never import `better-sqlite3` or `lib/db.js` into a client component.
+- Never import `lib/db.js` into a client component.
 - Server actions must keep the `"use server"` directive.
 - Lucia reads and writes cookies through `next/headers`, which only works on the server.
 - `redirect()` throws internally; do not wrap it in a try/catch that swallows the error.
-- Deleting `training.db` resets users, sessions, and seeded trainings.
+- The shared Supabase database hosts other apps' schemas too (`news`, `foodies`, `newsletter`); only touch `auth_demo`.
+- Duplicate signups are detected by Postgres error code `23505`.
 
 ## Memory
 

@@ -1,40 +1,38 @@
 # Training Authentication — Working Memory
 
-_Last updated: 2026-11-02_
+_Last updated: 2026-11-12_
 
 ## Current status
 
-- Signup, login, logout, session validation, and the protected training page work.
-- SQLite schema and training seed are created automatically.
-- No tests or deployment workflow yet.
+- Signup, login, logout, session validation, and the protected training page work (verified end to end against Postgres on 2026-11-12).
+- Data lives in Supabase Postgres (`auth_demo` schema); schema + seed in `db/migration.sql` (idempotent).
+- Linked to Vercel project `users-authentication` (GitHub connected). Deployment waits on the Supabase integration being provisioned.
+- No tests yet.
 
 ## Key decisions
 
-- Used Lucia with the SQLite adapter to keep sessions server-side and cookie-backed.
+- Used Lucia; 2026-11-12 switched from the SQLite adapter to `@lucia-auth/adapter-postgresql` (PostgresJsAdapter) on the shared portfolio Supabase project.
 - Used Node `crypto` for hashing to avoid an extra dependency.
-- Kept the database local to match the course before a hosted migration.
+- Schema named `auth_demo` because Supabase reserves `auth`.
 
 ## Known limitations and follow-ups
 
-- SQLite is not durable on Vercel.
 - No password reset, email verification, or rate limiting.
-- Training image paths produce a double slash.
 - Nested `(auth)` layout renders a second `<html>`/`<body>`.
+- Lucia v3 is deprecated; acceptable for a learning project.
 - No tests.
 
 ## Mistakes to avoid
 
-- Deleting `training.db` logs everyone out and reseeds trainings.
 - Importing `lib/db.js` in a client component breaks the build.
 - A non-HTTPS production deployment drops the `secure` session cookie.
 - Catching a `redirect()` error prevents the navigation.
+- Training image names are stored without a leading slash (the page adds `/trainings/`).
 
 ## Next steps
 
-- Migrate persistence to Supabase Postgres and the matching Lucia adapter.
-- Fix the training image paths and simplify the nested layout.
-- Add password reset and basic rate limiting.
-- Add tests for the auth actions.
+- Add the live URL to the README once deployed.
+- Simplify the nested layout; add rate limiting and tests.
 
 ---
 

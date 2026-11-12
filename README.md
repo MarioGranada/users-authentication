@@ -1,8 +1,8 @@
 # Training Authentication
 
-A Next.js App Router app that demonstrates cookie-based authentication with Lucia. Visitors can create an account or log in, and authenticated users reach a training catalogue that is seeded into SQLite on first run.
+A Next.js App Router app that demonstrates cookie-based authentication with Lucia. Visitors can create an account or log in, and authenticated users reach a training catalogue stored in Postgres.
 
-Passwords are hashed with Node’s `scrypt`, sessions are stored in SQLite, and the session cookie is validated on the server before the protected page renders.
+Passwords are hashed with Node’s `scrypt`, users, sessions and trainings are stored in an `auth_demo` schema of a hosted Supabase Postgres database, and the session cookie is validated on the server before the protected page renders.
 
 > **Follow-along project.** This app was built while following **Next.js 14 & React — The Complete Guide (Academind / Maximilian Schwarzmüller)**. It is included in the portfolio as a learning exercise, not as a production product. The implementation is my own work based on the course material.
 
@@ -11,7 +11,7 @@ Passwords are hashed with Node’s `scrypt`, sessions are stored in SQLite, and 
 - Signup and login through server actions.
 - Password hashing and verification with `scrypt` and a random salt.
 - Lucia v3 session creation, validation, and invalidation.
-- SQLite persistence for users, sessions, and trainings.
+- Supabase Postgres persistence for users, sessions, and trainings.
 - Protected `/training` route that redirects unauthenticated visitors.
 - Login/signup mode switch through the `?mode=` query parameter.
 - Logout server action that clears the session cookie.
@@ -22,8 +22,8 @@ Passwords are hashed with Node’s `scrypt`, sessions are stored in SQLite, and 
 | Layer | Technology |
 | --- | --- |
 | Framework | Next.js 14 (App Router) |
-| Auth | Lucia v3 + `@lucia-auth/adapter-sqlite` |
-| Database | SQLite via `better-sqlite3` |
+| Auth | Lucia v3 + `@lucia-auth/adapter-postgresql` (PostgresJsAdapter) |
+| Database | Supabase Postgres via `postgres` (postgres.js) |
 | Passwords | Node `crypto.scryptSync` |
 | Styling | Global CSS |
 
@@ -42,10 +42,12 @@ users-authentication/
 ├── components/auth-form.js     # Client form + useFormState
 ├── lib/
 │   ├── auth.js                 # Lucia adapter and session helpers
-│   ├── db.js                   # Schema creation and training seed
+│   ├── db.js                   # Shared postgres.js client
 │   ├── hash.js                 # scrypt hash/verify
 │   ├── training.js             # Training queries
 │   └── user.js                 # User queries
+├── db/migration.sql            # Idempotent schema + training seed
+├── scripts/db-migrate.mjs      # Applies db/migration.sql
 ├── public/                     # Auth icon and training images
 └── jsconfig.json               # @/* path alias
 ```
@@ -54,9 +56,9 @@ users-authentication/
 
 ### Requirements
 
-- Node.js 18 or 20 (use a version supported by `better-sqlite3`).
+- Node.js 22+.
 - npm (a `package-lock.json` is committed).
-- A writable project directory; `training.db` is created on first run.
+- A Postgres database. The deployed app uses the shared portfolio Supabase project, connected to the Vercel project through the Supabase integration.
 
 ### 1. Install dependencies
 
@@ -64,17 +66,36 @@ users-authentication/
 npm install
 ```
 
-### 2. Run locally
 
-**Start the development server**
+### 2. Configure environment variables
+
+```bash
+vercel link          # once, links the folder to the Vercel project
+vercel env pull .env.local
+```
+
+| Variable | Description | Required |
+| --- | --- | --- |
+| `POSTGRES_URL` | Pooled Postgres connection string (set by the Supabase integration). | Yes |
+| `POSTGRES_URL_NON_POOLING` | Direct connection used by `npm run db:migrate`; falls back to `POSTGRES_URL`. | No |
+
+Any Postgres works locally, e.g. `POSTGRES_URL=postgres://postgres:postgres@localhost:5432/postgres`. See `.env.example`. No auth secret is needed: Lucia stores sessions in the database.
+
+### 3. Create the schema and seed data
+
+```bash
+npm run db:migrate
+```
+
+Safe to re-run: tables use `if not exists` and seed rows `on conflict do nothing`.
+
+### 4. Run locally
 
 ```bash
 npm run dev
 ```
 
 Open http://localhost:3000.
-
-The SQLite schema and training rows are created automatically on first import.
 
 ### Available scripts
 
@@ -84,12 +105,13 @@ The SQLite schema and training rows are created automatically on first import.
 | `npm run build` | Create a production build. |
 | `npm run start` | Serve the production build. |
 | `npm run lint` | Run `next lint`. |
+| `npm run db:migrate` | Apply `db/migration.sql` (schema + seed). |
 
 ## How it works
 
-`lib/db.js` opens `training.db`, creates the `users`, `sessions`, and `trainings` tables if needed, and inserts seven training rows only when the table is empty.
+`db/migration.sql` creates the `auth_demo.users`, `auth_demo.sessions` and `auth_demo.trainings` tables and seeds seven trainings. `lib/db.js` exports the shared postgres.js client used by every query (`lib/user.js`, `lib/training.js`).
 
-`lib/auth.js` configures Lucia with `BetterSqlite3Adapter`, creates sessions, writes the session cookie through `next/headers`, validates it on each protected request, and clears it on logout.
+`lib/auth.js` configures Lucia with `PostgresJsAdapter` on the `auth_demo` tables, creates sessions, writes the session cookie through `next/headers`, validates it on each protected request, and clears it on logout.
 
 `actions/auth-actions.js` contains the `"use server"` actions. Signup validates email and an eight-character password, hashes it, inserts the user, creates a session, and redirects to `/training`. Login verifies the password and creates a session.
 
@@ -99,15 +121,14 @@ The SQLite schema and training rows are created automatically on first import.
 
 ## Deployment
 
-- Target: Vercel for Next.js, with Supabase for persistence. `better-sqlite3` writes `training.db` to the local filesystem, which is ephemeral on Vercel.
-- Migration path: replace the SQLite adapter with a hosted Postgres adapter and keep the Lucia session API, or move to Supabase Auth.
+- Target: Vercel, with data in the shared portfolio Supabase project (schema `auth_demo`; not `auth`, which Supabase reserves). The Supabase ↔ Vercel integration injects `POSTGRES_URL` into every environment.
+- Run `npm run db:migrate` once against the Supabase database before the first deployment.
 - Session cookies are marked `secure` when `NODE_ENV === "production"`; HTTPS is required in production.
-- No GitHub Actions workflow is committed; Vercel’s Git integration is the simplest path.
+- Deployed through Vercel’s Git integration; no GitHub Actions workflow is needed.
 
 ## Notes and limitations
 
-- `training.db` is gitignored (`*.db`) and is created on first run.
-- The seed stores image paths such as `/yoga.jpg`, while the page prefixes them with `/trainings/`, producing `/trainings//yoga.jpg`; browsers usually normalise the double slash, but the data should be cleaned up.
+- The `auth_demo` schema is not exposed through the Supabase Data API; RLS is enabled with no policies, and the app connects server-side only. Password hashes never leave the server.
 - `app/(auth)/layout.jsx` renders its own `<html>` and `<body>` inside the root layout. This is a course quirk and should be simplified to a fragment in a production app.
 - There is no password reset, email verification, or rate limiting.
 - Lucia v3 is deprecated in favour of newer auth approaches; treat this as a learning implementation.

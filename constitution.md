@@ -16,8 +16,8 @@ This document defines the non-negotiable foundations for this repository. Read i
 | Layer | Choice | Rationale |
 | --- | --- | --- |
 | Framework | Next.js 14 (App Router) | Server components and server actions keep auth on the server. |
-| Auth | Lucia v3 + `@lucia-auth/adapter-sqlite` | Session management with a SQLite adapter. |
-| Database | SQLite via `better-sqlite3` | Zero-configuration local persistence for the course. |
+| Auth | Lucia v3 + `@lucia-auth/adapter-postgresql` | Same Lucia session API on Postgres (smallest change from SQLite). |
+| Database | Supabase Postgres via `postgres` (postgres.js) | Durable hosted persistence for the Vercel deployment (2026-11-12); SQLite cannot persist on Vercel. |
 | Passwords | Node `crypto.scryptSync` | Built-in, dependency-free password hashing. |
 | Styling | Global CSS | A small stylesheet for the auth form and training grid. |
 
@@ -43,7 +43,7 @@ A course project for server-side authentication with Next.js and Lucia. It is no
 
 ### 4. Data and State
 
-- SQLite is the local source of truth for users, sessions, and trainings.
+- Supabase Postgres (`auth_demo` schema) is the source of truth for users, sessions, and trainings; schema and seed live in `db/migration.sql`.
 - Passwords are stored as `hash:salt` and verified with `timingSafeEqual`.
 - Sessions are cookie-backed and validated on every protected request.
 - Never return password hashes or session ids to the client.
@@ -58,17 +58,16 @@ A course project for server-side authentication with Next.js and Lucia. It is no
 
 - `npm run lint` and `npm run build` are the gates.
 - Manually test signup, duplicate email, short password, login, wrong password, protected redirect, logout, and a stale cookie.
-- Delete `training.db` and confirm the schema and seed are recreated.
+- Re-run `npm run db:migrate` and confirm it is idempotent (no duplicate trainings).
 
 ### 7. Deployment
 
-- Deploy Next.js to Vercel with Supabase (or another hosted Postgres) for persistence.
-- Replace `better-sqlite3` before relying on production data; the local filesystem is ephemeral.
+- Deploy Next.js to Vercel; data lives in the shared portfolio Supabase project and `POSTGRES_URL` comes from the Supabase ↔ Vercel integration.
 - Keep session cookies `secure` and serve over HTTPS.
 
 ## What to Avoid
 
-- Committing `training.db` or real user data.
+- Committing database URLs, `.env*` files (except `.env.example`) or real user data.
 - Importing database code into client components.
 - Swallowing Next.js redirect errors in try/catch blocks.
 - Storing plaintext passwords or returning hashes.
